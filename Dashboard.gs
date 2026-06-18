@@ -142,7 +142,7 @@ function prepareDashboardSheet_(dashboardSheet) {
 }
 
 function writeDashboardHeader_(dashboardSheet) {
-  dashboardSheet.getRange('A1:F2').merge().setValue('MACHINE EFFICIENCY DASHBOARD');
+  dashboardSheet.getRange('A1:L2').merge().setValue('MACHINE EFFICIENCY DASHBOARD');
 }
 
 function writeKpiCards_(dashboardSheet, dashboardData) {
@@ -150,43 +150,37 @@ function writeKpiCards_(dashboardSheet, dashboardData) {
     {
       label: 'Total Target Output',
       value: dashboardData.totalTargetOutput,
-      range: 'A4:B5',
-      valueRange: 'A5:B5',
+      range: 'A4:B7',
       numberFormat: '#,##0'
     },
     {
       label: 'Total Actual Output',
       value: dashboardData.totalActualOutput,
-      range: 'C4:D5',
-      valueRange: 'C5:D5',
+      range: 'C4:D7',
       numberFormat: '#,##0'
     },
     {
       label: 'Overall Efficiency %',
       value: dashboardData.overallEfficiency,
-      range: 'E4:F5',
-      valueRange: 'E5:F5',
+      range: 'E4:F7',
       numberFormat: '0.00%'
     },
     {
       label: 'Average Downtime',
       value: dashboardData.averageDowntime,
-      range: 'A7:B8',
-      valueRange: 'A8:B8',
+      range: 'G4:H7',
       numberFormat: '#,##0.00'
     },
     {
       label: 'Total Machines',
       value: dashboardData.totalMachines,
-      range: 'C7:D8',
-      valueRange: 'C8:D8',
+      range: 'I4:J7',
       numberFormat: '#,##0'
     },
     {
       label: 'Total Sections',
       value: dashboardData.totalSections,
-      range: 'E7:F8',
-      valueRange: 'E8:F8',
+      range: 'K4:L7',
       numberFormat: '#,##0'
     }
   ];
@@ -200,10 +194,15 @@ function writeKpiCards_(dashboardSheet, dashboardData) {
     var labelRange = dashboardSheet.getRange(
       cardStart.getRow(),
       cardStart.getColumn(),
-      1,
+      2,
       cardStart.getNumColumns()
     );
-    var valueRange = dashboardSheet.getRange(card.valueRange);
+    var valueRange = dashboardSheet.getRange(
+      cardStart.getRow() + 2,
+      cardStart.getColumn(),
+      2,
+      cardStart.getNumColumns()
+    );
 
     labelRange.merge().setValue(card.label);
     valueRange.merge().setValue(card.value).setNumberFormat(card.numberFormat);
@@ -211,13 +210,19 @@ function writeKpiCards_(dashboardSheet, dashboardData) {
 }
 
 function writeMachineEfficiencyTable_(dashboardSheet, machineRows) {
-  dashboardSheet.getRange('A11:C11').merge().setValue('MACHINE EFFICIENCY STATUS');
-  dashboardSheet.getRange(12, 1, 1, 3).setValues([
-    ['Machine', 'Efficiency %', 'Status']
-  ]);
+  dashboardSheet.getRange('B10:K10').merge().setValue('MACHINE EFFICIENCY STATUS');
+  dashboardSheet.getRange('B11:E11').merge().setValue('Machine');
+  dashboardSheet.getRange('F11:H11').merge().setValue('Efficiency %');
+  dashboardSheet.getRange('I11:K11').merge().setValue('Status');
 
   if (machineRows.length > 0) {
-    dashboardSheet.getRange(13, 1, machineRows.length, 3).setValues(machineRows);
+    machineRows.forEach(function(machineRow, rowOffset) {
+      var rowNumber = 12 + rowOffset;
+
+      dashboardSheet.getRange(rowNumber, 2, 1, 4).merge().setValue(machineRow[0]);
+      dashboardSheet.getRange(rowNumber, 6, 1, 3).merge().setValue(machineRow[1]);
+      dashboardSheet.getRange(rowNumber, 9, 1, 3).merge().setValue(machineRow[2]);
+    });
   }
 }
 
@@ -230,19 +235,19 @@ function formatDashboard_(dashboardSheet, dashboardData) {
 
 function formatDashboardHeader_(dashboardSheet) {
   dashboardSheet
-    .getRange('A1:F2')
+    .getRange('A1:L2')
     .setBackground('#1f4e78')
     .setFontColor('#ffffff')
-    .setFontSize(18)
+    .setFontSize(20)
     .setFontWeight('bold')
     .setHorizontalAlignment('center')
     .setVerticalAlignment('middle');
 }
 
 function formatKpiCards_(dashboardSheet, overallEfficiency) {
-  var cardRanges = ['A4:B5', 'C4:D5', 'E4:F5', 'A7:B8', 'C7:D8', 'E7:F8'];
-  var labelRanges = ['A4:B4', 'C4:D4', 'E4:F4', 'A7:B7', 'C7:D7', 'E7:F7'];
-  var valueRanges = ['A5:B5', 'C5:D5', 'E5:F5', 'A8:B8', 'C8:D8', 'E8:F8'];
+  var cardRanges = ['A4:B7', 'C4:D7', 'E4:F7', 'G4:H7', 'I4:J7', 'K4:L7'];
+  var labelRanges = ['A4:B5', 'C4:D5', 'E4:F5', 'G4:H5', 'I4:J5', 'K4:L5'];
+  var valueRanges = ['A6:B7', 'C6:D7', 'E6:F7', 'G6:H7', 'I6:J7', 'K6:L7'];
 
   cardRanges.forEach(function(cardRange) {
     dashboardSheet
@@ -256,7 +261,7 @@ function formatKpiCards_(dashboardSheet, overallEfficiency) {
       .getRange(labelRange)
       .setFontWeight('bold')
       .setFontColor('#334e68')
-      .setFontSize(10)
+      .setFontSize(11)
       .setHorizontalAlignment('center')
       .setVerticalAlignment('middle');
   });
@@ -266,18 +271,18 @@ function formatKpiCards_(dashboardSheet, overallEfficiency) {
       .getRange(valueRange)
       .setFontWeight('bold')
       .setFontColor('#102a43')
-      .setFontSize(16)
+      .setFontSize(19)
       .setHorizontalAlignment('center')
       .setVerticalAlignment('middle');
   });
 
   var efficiencyColors = getEfficiencyCardColors_(overallEfficiency);
   dashboardSheet
-    .getRange('E4:F5')
+    .getRange('E4:F7')
     .setBackground(efficiencyColors.background)
     .setFontColor(efficiencyColors.font);
-  dashboardSheet.getRange('E4:F4').setFontColor(efficiencyColors.font);
-  dashboardSheet.getRange('E5:F5').setFontColor(efficiencyColors.font);
+  dashboardSheet.getRange('E4:F5').setFontColor(efficiencyColors.font);
+  dashboardSheet.getRange('E6:F7').setFontColor(efficiencyColors.font);
 }
 
 function getEfficiencyCardColors_(overallEfficiency) {
@@ -303,7 +308,7 @@ function getEfficiencyCardColors_(overallEfficiency) {
 
 function formatMachineTable_(dashboardSheet, machineCount) {
   dashboardSheet
-    .getRange('A11:C11')
+    .getRange('B10:K10')
     .setBackground('#334e68')
     .setFontColor('#ffffff')
     .setFontSize(12)
@@ -312,7 +317,7 @@ function formatMachineTable_(dashboardSheet, machineCount) {
     .setVerticalAlignment('middle');
 
   dashboardSheet
-    .getRange('A12:C12')
+    .getRange('B11:K11')
     .setBackground('#486581')
     .setFontColor('#ffffff')
     .setFontWeight('bold')
@@ -321,15 +326,14 @@ function formatMachineTable_(dashboardSheet, machineCount) {
     .setBorder(true, true, true, true, true, true, '#bcccdc', SpreadsheetApp.BorderStyle.SOLID);
 
   if (machineCount > 0) {
-    var dataRange = dashboardSheet.getRange(13, 1, machineCount, 3);
+    var dataRange = dashboardSheet.getRange(12, 2, machineCount, 10);
 
     dataRange
       .setBorder(true, true, true, true, true, true, '#d9e2ec', SpreadsheetApp.BorderStyle.SOLID)
       .setVerticalAlignment('middle');
 
-    dashboardSheet.getRange(13, 2, machineCount, 1).setNumberFormat('0.00%');
-    dashboardSheet.getRange(13, 2, machineCount, 1).setHorizontalAlignment('center');
-    dashboardSheet.getRange(13, 3, machineCount, 1).setHorizontalAlignment('center');
+    dashboardSheet.getRange(12, 6, machineCount, 3).setNumberFormat('0.00%');
+    dashboardSheet.getRange(12, 2, machineCount, 10).setHorizontalAlignment('center');
     applyMachineTableBanding_(dashboardSheet, machineCount);
     applyStatusColorCoding_(dashboardSheet, machineCount);
   }
@@ -338,16 +342,16 @@ function formatMachineTable_(dashboardSheet, machineCount) {
 function applyMachineTableBanding_(dashboardSheet, machineCount) {
   for (var rowOffset = 0; rowOffset < machineCount; rowOffset += 1) {
     var background = rowOffset % 2 === 0 ? '#ffffff' : '#f8fafc';
-    dashboardSheet.getRange(13 + rowOffset, 1, 1, 3).setBackground(background);
+    dashboardSheet.getRange(12 + rowOffset, 2, 1, 10).setBackground(background);
   }
 }
 
 function applyStatusColorCoding_(dashboardSheet, machineCount) {
-  var statuses = dashboardSheet.getRange(13, 3, machineCount, 1).getValues();
+  var statuses = dashboardSheet.getRange(12, 9, machineCount, 1).getValues();
 
   statuses.forEach(function(statusRow, rowOffset) {
     var status = statusRow[0];
-    var statusCell = dashboardSheet.getRange(13 + rowOffset, 3);
+    var statusCell = dashboardSheet.getRange(12 + rowOffset, 9, 1, 3);
 
     if (status === 'Normal') {
       statusCell.setBackground('#2e7d32').setFontColor('#ffffff').setFontWeight('bold');
@@ -367,17 +371,22 @@ function applyStatusColorCoding_(dashboardSheet, machineCount) {
 
 function applyDashboardLayout_(dashboardSheet) {
   dashboardSheet.setFrozenRows(0);
-  dashboardSheet.setRowHeights(1, 2, 34);
-  dashboardSheet.setRowHeights(4, 2, 34);
-  dashboardSheet.setRowHeights(7, 2, 34);
-  dashboardSheet.setRowHeight(10, 18);
-  dashboardSheet.setRowHeight(11, 32);
-  dashboardSheet.setRowHeight(12, 28);
-  dashboardSheet.setColumnWidths(1, 6, 135);
-  dashboardSheet.setColumnWidth(1, 180);
-  dashboardSheet.setColumnWidth(2, 105);
-  dashboardSheet.setColumnWidth(3, 150);
-  dashboardSheet.setColumnWidth(4, 105);
-  dashboardSheet.setColumnWidth(5, 150);
-  dashboardSheet.setColumnWidth(6, 105);
+  dashboardSheet.setRowHeights(1, 2, 38);
+  dashboardSheet.setRowHeights(4, 4, 34);
+  dashboardSheet.setRowHeight(9, 20);
+  dashboardSheet.setRowHeight(10, 34);
+  dashboardSheet.setRowHeight(11, 30);
+  dashboardSheet.setColumnWidths(1, 12, 95);
+  dashboardSheet.setColumnWidth(1, 110);
+  dashboardSheet.setColumnWidth(2, 110);
+  dashboardSheet.setColumnWidth(3, 110);
+  dashboardSheet.setColumnWidth(4, 110);
+  dashboardSheet.setColumnWidth(5, 120);
+  dashboardSheet.setColumnWidth(6, 110);
+  dashboardSheet.setColumnWidth(7, 115);
+  dashboardSheet.setColumnWidth(8, 115);
+  dashboardSheet.setColumnWidth(9, 110);
+  dashboardSheet.setColumnWidth(10, 110);
+  dashboardSheet.setColumnWidth(11, 105);
+  dashboardSheet.setColumnWidth(12, 105);
 }
