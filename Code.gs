@@ -6,6 +6,8 @@ function onOpen() {
     .addItem('Refresh Dashboard', 'refreshDashboard')
     .addItem('Generate Corrective Actions', 'generateCorrectiveActions')
     .addItem('Generate Daily Summary', 'generateDailySummary')
+    .addItem('Setup Data Validation', 'setupDataValidation')
+    .addItem('Audit Production Data', 'auditProductionData')
     .addItem('Export Dashboard PDF', 'exportDashboardPdf')
     .addItem('Export Corrective Actions PDF', 'exportCorrectiveActionsPdf')
     .addToUi();
