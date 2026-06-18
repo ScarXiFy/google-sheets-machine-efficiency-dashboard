@@ -22,6 +22,7 @@ function refreshDashboard() {
   writeKpiCards_(dashboardSheet, dashboardData);
   writeMachineEfficiencyTable_(dashboardSheet, dashboardData.machineRows);
   formatDashboard_(dashboardSheet, dashboardData);
+  refreshDashboardCharts(dashboardSheet, productionRows, dashboardData);
 
   SpreadsheetApp.getUi().alert('Dashboard refreshed.');
 }
