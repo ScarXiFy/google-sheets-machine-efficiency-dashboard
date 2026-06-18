@@ -2,6 +2,7 @@ var DASHBOARD_SHEET_NAME = 'Dashboard';
 var DAILY_PRODUCTION_SHEET_NAME = 'DailyProduction';
 
 var DAILY_PRODUCTION_COLUMNS = {
+  date: 0,
   section: 1,
   machine: 2,
   targetOutput: 3,
@@ -14,15 +15,27 @@ function refreshDashboard() {
   var productionSheet = spreadsheet.getSheetByName(DAILY_PRODUCTION_SHEET_NAME);
   var dashboardSheet = getOrCreateDashboardSheet_(spreadsheet);
   var productionRows = getProductionRows_(productionSheet);
-  var dashboardData = calculateDashboardData_(productionRows);
+  var dashboardFilters = readDashboardFilters(dashboardSheet);
+  var validationResult = validateDashboardFilters(dashboardFilters, productionRows);
+
+  if (!validationResult.isValid) {
+    SpreadsheetApp.getUi().alert(validationResult.message);
+    return;
+  }
+
+  dashboardFilters = validationResult.filters;
+
+  var filteredProductionRows = applyProductionFilters(productionRows, dashboardFilters);
+  var dashboardData = calculateDashboardData_(filteredProductionRows);
 
   prepareDashboardSheet_(dashboardSheet);
 
   writeDashboardHeader_(dashboardSheet);
+  writeDashboardFilters(dashboardSheet, dashboardFilters, productionRows);
   writeKpiCards_(dashboardSheet, dashboardData);
   writeMachineEfficiencyTable_(dashboardSheet, dashboardData.machineRows);
   formatDashboard_(dashboardSheet, dashboardData);
-  refreshDashboardCharts(dashboardSheet, productionRows, dashboardData);
+  refreshDashboardCharts(dashboardSheet, filteredProductionRows, dashboardData);
 
   SpreadsheetApp.getUi().alert('Dashboard refreshed.');
 }
@@ -133,6 +146,156 @@ function getMachineStatus_(efficiency) {
   return 'Critical';
 }
 
+function readDashboardFilters(dashboardSheet) {
+  return {
+    dateFromValue: dashboardSheet.getRange('B4').getValue(),
+    dateToValue: dashboardSheet.getRange('D4').getValue(),
+    section: dashboardSheet.getRange('F4').getValue(),
+    machine: dashboardSheet.getRange('H4').getValue()
+  };
+}
+
+function validateDashboardFilters(filters, productionRows) {
+  var dateFrom = parseDashboardDate_(filters.dateFromValue);
+  var dateTo = parseDashboardDate_(filters.dateToValue);
+
+  if (dateFrom.invalid) {
+    return {
+      isValid: false,
+      message: 'Date From is invalid. Please enter a valid date.'
+    };
+  }
+
+  if (dateTo.invalid) {
+    return {
+      isValid: false,
+      message: 'Date To is invalid. Please enter a valid date.'
+    };
+  }
+
+  if (dateFrom.date && dateTo.date && dateFrom.date.getTime() > dateTo.date.getTime()) {
+    return {
+      isValid: false,
+      message: 'Date From cannot be later than Date To.'
+    };
+  }
+
+  return {
+    isValid: true,
+    filters: {
+      dateFrom: dateFrom.date,
+      dateTo: dateTo.date,
+      section: normalizeFilterOption_(filters.section, getUniqueProductionValues_(productionRows, DAILY_PRODUCTION_COLUMNS.section)),
+      machine: normalizeFilterOption_(filters.machine, getUniqueProductionValues_(productionRows, DAILY_PRODUCTION_COLUMNS.machine))
+    }
+  };
+}
+
+function applyProductionFilters(productionRows, filters) {
+  return productionRows.filter(function(row) {
+    var rowDate = parseDashboardDate_(row[DAILY_PRODUCTION_COLUMNS.date]).date;
+    var rowSection = row[DAILY_PRODUCTION_COLUMNS.section];
+    var rowMachine = row[DAILY_PRODUCTION_COLUMNS.machine];
+
+    if (filters.dateFrom && (!rowDate || rowDate.getTime() < filters.dateFrom.getTime())) {
+      return false;
+    }
+
+    if (filters.dateTo && (!rowDate || rowDate.getTime() > filters.dateTo.getTime())) {
+      return false;
+    }
+
+    if (filters.section !== 'All' && rowSection !== filters.section) {
+      return false;
+    }
+
+    if (filters.machine !== 'All' && rowMachine !== filters.machine) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function writeDashboardFilters(dashboardSheet, filters, productionRows) {
+  dashboardSheet.getRange('A4').setValue('Date From');
+  dashboardSheet.getRange('B4').setValue(filters.dateFrom || '');
+  dashboardSheet.getRange('C4').setValue('Date To');
+  dashboardSheet.getRange('D4').setValue(filters.dateTo || '');
+  dashboardSheet.getRange('E4').setValue('Section');
+  dashboardSheet.getRange('F4').setValue(filters.section);
+  dashboardSheet.getRange('G4').setValue('Machine');
+  dashboardSheet.getRange('H4').setValue(filters.machine);
+
+  buildFilterDropdowns(dashboardSheet, productionRows);
+  formatDashboardFilters_(dashboardSheet);
+}
+
+function buildFilterDropdowns(dashboardSheet, productionRows) {
+  var sectionOptions = ['All'].concat(getUniqueProductionValues_(productionRows, DAILY_PRODUCTION_COLUMNS.section));
+  var machineOptions = ['All'].concat(getUniqueProductionValues_(productionRows, DAILY_PRODUCTION_COLUMNS.machine));
+  var sectionRule = SpreadsheetApp
+    .newDataValidation()
+    .requireValueInList(sectionOptions, true)
+    .setAllowInvalid(false)
+    .build();
+  var machineRule = SpreadsheetApp
+    .newDataValidation()
+    .requireValueInList(machineOptions, true)
+    .setAllowInvalid(false)
+    .build();
+
+  dashboardSheet.getRange('F4').setDataValidation(sectionRule);
+  dashboardSheet.getRange('H4').setDataValidation(machineRule);
+}
+
+function parseDashboardDate_(value) {
+  if (!value) {
+    return {
+      date: null,
+      invalid: false
+    };
+  }
+
+  var parsedDate = value instanceof Date ? value : new Date(value);
+
+  if (isNaN(parsedDate.getTime())) {
+    return {
+      date: null,
+      invalid: true
+    };
+  }
+
+  return {
+    date: new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate()),
+    invalid: false
+  };
+}
+
+function normalizeFilterOption_(value, validOptions) {
+  var normalizedValue = String(value || '').trim();
+
+  if (!normalizedValue || normalizedValue === 'All') {
+    return 'All';
+  }
+
+  return validOptions.indexOf(normalizedValue) >= 0 ? normalizedValue : 'All';
+}
+
+function getUniqueProductionValues_(productionRows, columnIndex) {
+  var values = {};
+
+  productionRows.forEach(function(row) {
+    var value = row[columnIndex];
+
+    if (value) {
+      values[value] = true;
+    }
+  });
+
+  return Object.keys(values).sort();
+}
+
 function prepareDashboardSheet_(dashboardSheet) {
   dashboardSheet.setFrozenRows(0);
   dashboardSheet
@@ -151,37 +314,37 @@ function writeKpiCards_(dashboardSheet, dashboardData) {
     {
       label: 'Total Target Output',
       value: dashboardData.totalTargetOutput,
-      range: 'A4:B7',
+      range: 'A6:B9',
       numberFormat: '#,##0'
     },
     {
       label: 'Total Actual Output',
       value: dashboardData.totalActualOutput,
-      range: 'C4:D7',
+      range: 'C6:D9',
       numberFormat: '#,##0'
     },
     {
       label: 'Overall Efficiency %',
       value: dashboardData.overallEfficiency,
-      range: 'E4:F7',
+      range: 'E6:F9',
       numberFormat: '0.00%'
     },
     {
       label: 'Average Downtime',
       value: dashboardData.averageDowntime,
-      range: 'G4:H7',
+      range: 'G6:H9',
       numberFormat: '#,##0.00'
     },
     {
       label: 'Total Machines',
       value: dashboardData.totalMachines,
-      range: 'I4:J7',
+      range: 'I6:J9',
       numberFormat: '#,##0'
     },
     {
       label: 'Total Sections',
       value: dashboardData.totalSections,
-      range: 'K4:L7',
+      range: 'K6:L9',
       numberFormat: '#,##0'
     }
   ];
@@ -211,14 +374,14 @@ function writeKpiCards_(dashboardSheet, dashboardData) {
 }
 
 function writeMachineEfficiencyTable_(dashboardSheet, machineRows) {
-  dashboardSheet.getRange('B10:K10').merge().setValue('MACHINE EFFICIENCY STATUS');
-  dashboardSheet.getRange('B11:E11').merge().setValue('Machine');
-  dashboardSheet.getRange('F11:H11').merge().setValue('Efficiency %');
-  dashboardSheet.getRange('I11:K11').merge().setValue('Status');
+  dashboardSheet.getRange('B12:K12').merge().setValue('MACHINE EFFICIENCY STATUS');
+  dashboardSheet.getRange('B13:E13').merge().setValue('Machine');
+  dashboardSheet.getRange('F13:H13').merge().setValue('Efficiency %');
+  dashboardSheet.getRange('I13:K13').merge().setValue('Status');
 
   if (machineRows.length > 0) {
     machineRows.forEach(function(machineRow, rowOffset) {
-      var rowNumber = 12 + rowOffset;
+      var rowNumber = 14 + rowOffset;
 
       dashboardSheet.getRange(rowNumber, 2, 1, 4).merge().setValue(machineRow[0]);
       dashboardSheet.getRange(rowNumber, 6, 1, 3).merge().setValue(machineRow[1]);
@@ -234,6 +397,28 @@ function formatDashboard_(dashboardSheet, dashboardData) {
   applyDashboardLayout_(dashboardSheet);
 }
 
+function formatDashboardFilters_(dashboardSheet) {
+  dashboardSheet
+    .getRange('A4:H4')
+    .setBackground('#f8fafc')
+    .setBorder(true, true, true, true, true, true, '#d9e2ec', SpreadsheetApp.BorderStyle.SOLID)
+    .setVerticalAlignment('middle');
+
+  dashboardSheet
+    .getRangeList(['A4', 'C4', 'E4', 'G4'])
+    .setFontWeight('bold')
+    .setFontColor('#334e68')
+    .setHorizontalAlignment('center');
+
+  dashboardSheet
+    .getRangeList(['B4', 'D4', 'F4', 'H4'])
+    .setBackground('#ffffff')
+    .setFontColor('#102a43')
+    .setHorizontalAlignment('center');
+
+  dashboardSheet.getRangeList(['B4', 'D4']).setNumberFormat('mmm d, yyyy');
+}
+
 function formatDashboardHeader_(dashboardSheet) {
   dashboardSheet
     .getRange('A1:L2')
@@ -246,9 +431,9 @@ function formatDashboardHeader_(dashboardSheet) {
 }
 
 function formatKpiCards_(dashboardSheet, overallEfficiency) {
-  var cardRanges = ['A4:B7', 'C4:D7', 'E4:F7', 'G4:H7', 'I4:J7', 'K4:L7'];
-  var labelRanges = ['A4:B5', 'C4:D5', 'E4:F5', 'G4:H5', 'I4:J5', 'K4:L5'];
-  var valueRanges = ['A6:B7', 'C6:D7', 'E6:F7', 'G6:H7', 'I6:J7', 'K6:L7'];
+  var cardRanges = ['A6:B9', 'C6:D9', 'E6:F9', 'G6:H9', 'I6:J9', 'K6:L9'];
+  var labelRanges = ['A6:B7', 'C6:D7', 'E6:F7', 'G6:H7', 'I6:J7', 'K6:L7'];
+  var valueRanges = ['A8:B9', 'C8:D9', 'E8:F9', 'G8:H9', 'I8:J9', 'K8:L9'];
 
   cardRanges.forEach(function(cardRange) {
     dashboardSheet
@@ -279,11 +464,11 @@ function formatKpiCards_(dashboardSheet, overallEfficiency) {
 
   var efficiencyColors = getEfficiencyCardColors_(overallEfficiency);
   dashboardSheet
-    .getRange('E4:F7')
+    .getRange('E6:F9')
     .setBackground(efficiencyColors.background)
     .setFontColor(efficiencyColors.font);
-  dashboardSheet.getRange('E4:F5').setFontColor(efficiencyColors.font);
   dashboardSheet.getRange('E6:F7').setFontColor(efficiencyColors.font);
+  dashboardSheet.getRange('E8:F9').setFontColor(efficiencyColors.font);
 }
 
 function getEfficiencyCardColors_(overallEfficiency) {
@@ -309,7 +494,7 @@ function getEfficiencyCardColors_(overallEfficiency) {
 
 function formatMachineTable_(dashboardSheet, machineCount) {
   dashboardSheet
-    .getRange('B10:K10')
+    .getRange('B12:K12')
     .setBackground('#334e68')
     .setFontColor('#ffffff')
     .setFontSize(12)
@@ -318,7 +503,7 @@ function formatMachineTable_(dashboardSheet, machineCount) {
     .setVerticalAlignment('middle');
 
   dashboardSheet
-    .getRange('B11:K11')
+    .getRange('B13:K13')
     .setBackground('#486581')
     .setFontColor('#ffffff')
     .setFontWeight('bold')
@@ -327,14 +512,14 @@ function formatMachineTable_(dashboardSheet, machineCount) {
     .setBorder(true, true, true, true, true, true, '#bcccdc', SpreadsheetApp.BorderStyle.SOLID);
 
   if (machineCount > 0) {
-    var dataRange = dashboardSheet.getRange(12, 2, machineCount, 10);
+    var dataRange = dashboardSheet.getRange(14, 2, machineCount, 10);
 
     dataRange
       .setBorder(true, true, true, true, true, true, '#d9e2ec', SpreadsheetApp.BorderStyle.SOLID)
       .setVerticalAlignment('middle');
 
-    dashboardSheet.getRange(12, 6, machineCount, 3).setNumberFormat('0.00%');
-    dashboardSheet.getRange(12, 2, machineCount, 10).setHorizontalAlignment('center');
+    dashboardSheet.getRange(14, 6, machineCount, 3).setNumberFormat('0.00%');
+    dashboardSheet.getRange(14, 2, machineCount, 10).setHorizontalAlignment('center');
     applyMachineTableBanding_(dashboardSheet, machineCount);
     applyStatusColorCoding_(dashboardSheet, machineCount);
   }
@@ -343,16 +528,16 @@ function formatMachineTable_(dashboardSheet, machineCount) {
 function applyMachineTableBanding_(dashboardSheet, machineCount) {
   for (var rowOffset = 0; rowOffset < machineCount; rowOffset += 1) {
     var background = rowOffset % 2 === 0 ? '#ffffff' : '#f8fafc';
-    dashboardSheet.getRange(12 + rowOffset, 2, 1, 10).setBackground(background);
+    dashboardSheet.getRange(14 + rowOffset, 2, 1, 10).setBackground(background);
   }
 }
 
 function applyStatusColorCoding_(dashboardSheet, machineCount) {
-  var statuses = dashboardSheet.getRange(12, 9, machineCount, 1).getValues();
+  var statuses = dashboardSheet.getRange(14, 9, machineCount, 1).getValues();
 
   statuses.forEach(function(statusRow, rowOffset) {
     var status = statusRow[0];
-    var statusCell = dashboardSheet.getRange(12 + rowOffset, 9, 1, 3);
+    var statusCell = dashboardSheet.getRange(14 + rowOffset, 9, 1, 3);
 
     if (status === 'Normal') {
       statusCell.setBackground('#2e7d32').setFontColor('#ffffff').setFontWeight('bold');
@@ -373,10 +558,12 @@ function applyStatusColorCoding_(dashboardSheet, machineCount) {
 function applyDashboardLayout_(dashboardSheet) {
   dashboardSheet.setFrozenRows(0);
   dashboardSheet.setRowHeights(1, 2, 38);
-  dashboardSheet.setRowHeights(4, 4, 34);
-  dashboardSheet.setRowHeight(9, 20);
-  dashboardSheet.setRowHeight(10, 34);
-  dashboardSheet.setRowHeight(11, 30);
+  dashboardSheet.setRowHeight(4, 30);
+  dashboardSheet.setRowHeight(5, 18);
+  dashboardSheet.setRowHeights(6, 4, 34);
+  dashboardSheet.setRowHeight(11, 20);
+  dashboardSheet.setRowHeight(12, 34);
+  dashboardSheet.setRowHeight(13, 30);
   dashboardSheet.setColumnWidths(1, 12, 95);
   dashboardSheet.setColumnWidth(1, 110);
   dashboardSheet.setColumnWidth(2, 110);
