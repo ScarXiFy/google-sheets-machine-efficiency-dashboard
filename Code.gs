@@ -6,6 +6,7 @@ function onOpen() {
     .addItem('Refresh Dashboard', 'refreshDashboard')
     .addItem('Generate Corrective Actions', 'generateCorrectiveActions')
     .addItem('Generate Daily Summary', 'generateDailySummary')
+    .addItem('Generate Historical Trends', 'generateHistoricalTrends')
     .addItem('Setup Data Validation', 'setupDataValidation')
     .addItem('Audit Production Data', 'auditProductionData')
     .addItem('Export Dashboard PDF', 'exportDashboardPdf')
