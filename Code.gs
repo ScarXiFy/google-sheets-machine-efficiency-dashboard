@@ -9,6 +9,9 @@ function onOpen() {
     .addItem('Generate Historical Trends', 'generateHistoricalTrends')
     .addItem('Setup Data Validation', 'setupDataValidation')
     .addItem('Audit Production Data', 'auditProductionData')
+    .addItem('Send Daily Report', 'sendDailyReport')
+    .addItem('Send Weekly Report', 'sendWeeklyReport')
+    .addItem('View Report History', 'viewReportHistory')
     .addItem('Export Dashboard PDF', 'exportDashboardPdf')
     .addItem('Export Corrective Actions PDF', 'exportCorrectiveActionsPdf')
     .addToUi();
