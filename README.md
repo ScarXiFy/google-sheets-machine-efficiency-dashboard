@@ -6,6 +6,18 @@ Machine Efficiency Dashboard is a Google Sheets and Apps Script-based machine ef
 
 The project is designed for production teams that need a simple spreadsheet-based workflow without a separate database or web application. It turns daily production records into KPI cards, machine status summaries, charts, corrective action recommendations, daily summaries, and PDF reports.
 
+## Project Screenshots
+
+Recommended screenshots for portfolio or demo use:
+
+- Dashboard
+- Corrective Actions
+- Historical Trends
+- Executive Dashboard
+- Daily Summary
+
+Store screenshots in a `screenshots/` folder if you want them to render directly in GitHub later.
+
 ## Features
 
 - KPI Dashboard
@@ -13,9 +25,15 @@ The project is designed for production teams that need a simple spreadsheet-base
 - Section Efficiency Monitoring
 - Corrective Action Generation
 - RCA Configuration
+- Data Validation
+- Data Audit
 - Dashboard Filters
+- Historical Trends
+- Executive Dashboard
 - Daily Summary Reports
 - PDF Export
+- Email Reporting Automation
+- Report History
 - Charts and Visualizations
 
 ## System Workflow
@@ -25,6 +43,9 @@ DailyProduction
 -> Dashboard
 -> Corrective Actions
 -> Daily Summary
+-> Historical Trends
+-> Executive Dashboard
+-> Email Reports
 -> PDF Reports
 ```
 
@@ -73,6 +94,26 @@ Purpose: Stores issue-to-cause and issue-to-action mappings used by corrective a
 ### Daily Summary
 
 Purpose: Provides a management summary based on the currently selected Dashboard filters.
+
+### Historical Trends
+
+Purpose: Summarizes performance by production date and displays efficiency and downtime trends.
+
+### Executive Dashboard
+
+Purpose: Provides executive-level KPI cards, machine rankings, section rankings, downtime rankings, and status distribution charts.
+
+### Data Audit
+
+Purpose: Lists missing fields, invalid dates, negative values, and possible production entry errors.
+
+### Report Settings
+
+Purpose: Stores report recipient, CC recipient, enabled flags, and last report sent timestamp.
+
+### Report History
+
+Purpose: Tracks report delivery attempts, status, recipient, and generated file names.
 
 ## KPI Definitions
 
@@ -167,6 +208,20 @@ The Machine Dashboard menu includes two PDF export options:
 
 PDF files are generated in Google Drive with timestamped filenames. The Dashboard PDF preserves dashboard formatting and charts. The Corrective Actions PDF exports the corrective action report sheet.
 
+## Skills Demonstrated
+
+- Google Apps Script
+- Spreadsheet Automation
+- KPI Analytics
+- Dashboard Design
+- Data Validation
+- Reporting Systems
+- Business Process Automation
+- Data Visualization
+- PDF Generation
+- Email Automation
+- Technical Documentation
+
 ## Installation
 
 1. Create a new Google Sheet.
@@ -178,6 +233,11 @@ PDF files are generated in Google Drive with timestamped filenames. The Dashboar
    - `CorrectiveActions.gs`
    - `Charts.gs`
    - `Reports.gs`
+   - `DataValidation.gs`
+   - `HistoricalTrends.gs`
+   - `AutomatedReporting.gs`
+   - `ExecutiveDashboard.gs`
+   - `Metadata.gs`
 4. Copy each file's code into the matching Apps Script file.
 5. Save the Apps Script project.
 6. Run any menu function once from Apps Script if Google asks for authorization.
@@ -216,6 +276,38 @@ Builds the Corrective Actions sheet using DailyProduction data and RCA Config ma
 
 Creates or refreshes the Daily Summary sheet using the currently selected Dashboard filters.
 
+### Setup Data Validation
+
+Adds validation rules, dropdowns, formatting, data quality highlighting, and generated sheet protection.
+
+### Audit Production Data
+
+Creates or refreshes the Data Audit sheet with data quality issues found in DailyProduction.
+
+### Generate Historical Trends
+
+Creates or refreshes the Historical Trends sheet with daily performance summaries and trend charts.
+
+### Refresh Executive Dashboard
+
+Creates or refreshes the Executive Dashboard sheet for management review.
+
+### Send Daily Report
+
+Generates reports, emails PDF attachments, updates Report History, and updates Last Report Sent.
+
+### Send Weekly Report
+
+Generates a weekly-style management email report with KPI, trend, corrective action, and machine ranking context.
+
+### View Report History
+
+Opens the Report History sheet.
+
+### About Dashboard
+
+Displays project version and feature metadata.
+
 ### Export Dashboard PDF
 
 Exports the Dashboard sheet to a timestamped PDF file in Google Drive.
@@ -231,7 +323,9 @@ Exports the Corrective Actions sheet to a timestamped PDF file in Google Drive.
 3. Review KPI cards, charts, and machine status.
 4. Run **Generate Corrective Actions**.
 5. Run **Generate Daily Summary**.
-6. Export PDF reports for review or sharing.
+6. Run **Generate Historical Trends**.
+7. Run **Refresh Executive Dashboard**.
+8. Export or email reports for review or sharing.
 
 ## Portfolio Highlights
 
@@ -242,6 +336,8 @@ Exports the Corrective Actions sheet to a timestamped PDF file in Google Drive.
 - Business Reporting
 - Data Visualization
 - Process Automation
+- Executive Analytics
+- Email Automation
 
 ## Limitations
 
@@ -252,9 +348,8 @@ Exports the Corrective Actions sheet to a timestamped PDF file in Google Drive.
 
 ## Future Enhancements
 
-- Email reports
-- Automated scheduling
-- Trend analysis
-- Machine ranking dashboard
-- Historical reporting
+- Trigger setup wizard for scheduled reports
+- Monthly and quarterly reporting
+- Screenshot gallery
+- CSV import workflow
 - Multi-user support

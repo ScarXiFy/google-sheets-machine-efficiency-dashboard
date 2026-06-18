@@ -13,6 +13,7 @@ function onOpen() {
     .addItem('Send Daily Report', 'sendDailyReport')
     .addItem('Send Weekly Report', 'sendWeeklyReport')
     .addItem('View Report History', 'viewReportHistory')
+    .addItem('About Dashboard', 'showAbout')
     .addItem('Export Dashboard PDF', 'exportDashboardPdf')
     .addItem('Export Corrective Actions PDF', 'exportCorrectiveActionsPdf')
     .addToUi();
