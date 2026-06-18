@@ -4,6 +4,7 @@ function onOpen() {
     .addItem('Setup Sheets', 'setupSheets')
     .addItem('Load Sample Data', 'loadSampleData')
     .addItem('Refresh Dashboard', 'refreshDashboard')
+    .addItem('Refresh Executive Dashboard', 'refreshExecutiveDashboard')
     .addItem('Generate Corrective Actions', 'generateCorrectiveActions')
     .addItem('Generate Daily Summary', 'generateDailySummary')
     .addItem('Generate Historical Trends', 'generateHistoricalTrends')
