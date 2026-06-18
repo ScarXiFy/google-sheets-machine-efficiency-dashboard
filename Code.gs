@@ -3,5 +3,6 @@ function onOpen() {
     .createMenu('Machine Dashboard')
     .addItem('Setup Sheets', 'setupSheets')
     .addItem('Load Sample Data', 'loadSampleData')
+    .addItem('Refresh Dashboard', 'refreshDashboard')
     .addToUi();
 }
