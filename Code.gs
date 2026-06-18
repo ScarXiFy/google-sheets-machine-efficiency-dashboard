@@ -4,5 +4,6 @@ function onOpen() {
     .addItem('Setup Sheets', 'setupSheets')
     .addItem('Load Sample Data', 'loadSampleData')
     .addItem('Refresh Dashboard', 'refreshDashboard')
+    .addItem('Generate Corrective Actions', 'generateCorrectiveActions')
     .addToUi();
 }
